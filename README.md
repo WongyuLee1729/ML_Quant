@@ -1,1 +1,1 @@
-# Quant/ Math models
+# Quant/Math models
