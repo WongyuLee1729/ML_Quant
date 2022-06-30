@@ -31,7 +31,7 @@ Re-balancing Model using Multi-Armed Bandit + LSTM
 
 
 def data_preprocessing(sample, ticker, base_date):   
-    sample['CODE'] = ticker # 종목코드 추가
+    sample['CODE'] = ticker 
     sample = sample[sample['Date'] >= base_date][['Date','CODE','Close']].copy() 
     sample.reset_index(inplace= True, drop= True)
     sample['STD_YM'] = sample['Date'].map(lambda x : datetime.datetime.strptime(x,'%Y-%m-%d').strftime('%Y-%m')) 
@@ -62,7 +62,7 @@ def create_trade_book(sample, sample_codes, rebal_dates):
     return book
 
 
-# 상대모멘텀 tradings
+# Relative Strength Momentum
 def tradings(book, s_codes):
     std_ym = ''
     buy_phase = False
@@ -80,7 +80,6 @@ def tradings(book, s_codes):
     return book
 
 
-
 def multi_returns(book, s_codes):
     rtn = 1.0
     buy_dict = {}
@@ -95,7 +94,7 @@ def multi_returns(book, s_codes):
                 sell_dict[s] = book.loc[i, s]
                 rtn = (sell_dict[s] / buy_dict[s]) -1
                 book.loc[i, 'r '+s] = rtn
-                # print('개별 청산일 :',i,' 종목코드 :', s , 'long 진입가격 :', buy_dict[s],'|long 청산가격 : ',sell_dict[s],' | return:', round(rtn * 100, 2),'%') # 수익률 계산.
+                # print('sell date :',i,' stock code :', s , 'long buy price :', buy_dict[s],'|long sell price : ',sell_dict[s],' | return:', round(rtn * 100, 2),'%') 
             if book.loc[i, 'p '+ s] == '': 
                 buy_dict[s] = 0.0
                 sell_dict[s] = 0.0
@@ -109,9 +108,9 @@ def multi_returns(book, s_codes):
                 rtn += book.loc[i, 'r '+s]
         if (rtn != 0.0) & (count != 0) :
             acc_rtn *= (rtn /count )  + 1
-            # print('누적 청산일 : ',i,'청산 종목수 : ',count,'청산 수익률 : ',round((rtn /count),4),'누적 수익률 : ' ,round(acc_rtn, 4)) 
+            # print('cum_sell date : ',i,'sell stock # : ',count,'sell_rtn : ',round((rtn /count),4),'cum_rtn : ' ,round(acc_rtn, 4)) 
         book.loc[i,'acc_rtn'] = acc_rtn
-    # print ('누적 수익률 :', round(acc_rtn, 4))
+    # print ('cum_rtn :', round(acc_rtn, 4))
 
 
 def kl_divergence(p, q):
@@ -172,9 +171,6 @@ month_last_df = pd.DataFrame(columns=['Date','CODE','1M_RET'])
 stock_df = pd.DataFrame(columns =['Date','CODE','Close'])
 
 for file in files:
-    """
-    데이터 저장 경로에 있는 개별 종목들을 읽어온다.
-    """
     if os.path.isdir(file):
         print('%s <DIR> '%file)
     else:
@@ -193,7 +189,7 @@ for file in files:
             month_last_df = month_last_df.append(price_df.loc[price_df[price_df['STD_YM'] == ym].index[-1],['Date','CODE','1M_RET']])    
 
 
-# 2단계. 상대모멘텀 수익률로 filtering 하기.
+# Stage 2. filtering based on Relative Strength Momentum
 month_ret_df = month_last_df.pivot('Date','CODE','1M_RET').copy() 
 month_ret_df = month_ret_df.rank(axis=1, ascending=False, method="max", pct=True) 
 month_ret_df = month_ret_df.where( month_ret_df < ratio/10 , np.nan) 
@@ -315,15 +311,15 @@ for d in univ.index[1:]:
             
             if ticker in old_ticker:
                 
-                if float(tkrs[n].loc[d].values)>0.6  and vb.loc[d, n+'_vol'] > vb.loc[d, n+'_ub']: # 수익률 up 볼륨 up                
+                if float(tkrs[n].loc[d].values)>0.6  and vb.loc[d, n+'_vol'] > vb.loc[d, n+'_ub']:              
                     reward.loc['T',ticker] = reward.loc['T',ticker] + 2.0*float(tkrs[n].loc[d].values) 
                     answer.loc['T'] = answer.loc['T'] + 2.0*float(tkrs[n].loc[d].values)
                     
-                elif float(tkrs[n].loc[d].values)<0.4  and vb.loc[d, n+'_vol'] > vb.loc[d, n+'_ub']: # 수익률 down, 볼륨 up                
+                elif float(tkrs[n].loc[d].values)<0.4  and vb.loc[d, n+'_vol'] > vb.loc[d, n+'_ub']:               
                     reward.loc['T',ticker] = reward.loc['T',ticker] - 1.0*float(tkrs[n].loc[d].values)
                     answer.loc['T'] = answer.loc['T'] - 1*float(tkrs[n].loc[d].values)
                     
-                else: # 일반적인 경우    
+                else:     
                     reward.loc['T',ticker] = reward.loc['T',ticker] + float(tkrs[n].loc[d].values) #+ volf 
                 
             elif ticker not in old_ticker:
@@ -346,7 +342,7 @@ month_thompson.fillna(0, inplace=True)
 month_thompson[month_thompson != 0] = 1
 
 
-# 3단계. signal list로 trading + positioning
+# Stage 3. Using signal list -> trading + positioning
 sig_dict = dict()
 for date in month_thompson.index[1:]: # 1st one is not for rebal
     ticker_list = list(month_thompson.loc[date,month_thompson.loc[date,:] >= 1.0].index)
@@ -361,7 +357,7 @@ for date,values in sig_dict.items():
         
 book = tradings(book, stock_codes)
 
-# 4 단게. 수익률 계산하기.
+# Stage 4. Calculate revenue
 multi_returns(book, stock_codes)
 
 book.tail()
