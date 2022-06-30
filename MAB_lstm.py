@@ -197,7 +197,6 @@ month_ret_df.fillna(0,inplace=True)
 month_ret_df[month_ret_df != 0] = 1
 stock_codes = list(stock_df['CODE'].unique())
 
-
 univ = stock_df.pivot('Date','CODE','Close').copy()
 univ['STD_YM'] = univ.index.map(lambda x : datetime.datetime.strptime(x,'%Y-%m-%d').strftime('%Y'))
 univ = univ.loc[set_date:]
