@@ -61,7 +61,6 @@ def create_trade_book(sample, sample_codes, rebal_dates):
         book['r '+c] = ''
     return book
 
-
 # Relative Strength Momentum
 def tradings(book, s_codes):
     std_ym = ''
