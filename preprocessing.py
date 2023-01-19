@@ -4,6 +4,10 @@ import pandas as pd
 
 '''
 Price data preprocessing code
+
+X: dates (x-axis in dataframe) 
+Y: ticker_name (y-axis in dataframe)
+
 '''
 
 class stock_preprop:
