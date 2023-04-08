@@ -27,3 +27,5 @@ def Black_Litterman(df, r_bm, r_f, w_mkt, tau, q,p):
     w_bl = w_bl+abs(np.min(w_bl))+1
     w_bl = w_bl/np.sum(w_bl)
     return w_bl
+
+# Optimization process is needed 
