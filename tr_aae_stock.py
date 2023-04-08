@@ -28,14 +28,14 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 '''
-GICS 별 (CoSe, CoDi, CoSt, Ener, Fina, HeCa, Indu, InTe, Mate, ReEs, Util, 총 11개) 
-시총 기준 상위 10개 씩을 추려서 평균 변화율을 구하고 해 당 값을 이용해 학습시킴 
-testing에서는 다른 학습때와 다른 구간에 동일한 종목에 대해서 올바른 곳에 클러스터링 되는지 확인  
+GICS - (CoSe, CoDi, CoSt, Ener, Fina, HeCa, Indu, InTe, Mate, ReEs, Util, 총 11개) 
+Take the 10 ten based on market cap for training 
+Test the other stocks and check the clustering result 
 
-- 금융위기 구간: 2007-01-01 ~ 2010-01-01 finC
-- 코로나 구간: 2019-11-01 ~ 최근         Covid
-- 상승 구간: 2017-01-01 ~ 2020-01-01    Bull
-- 횡보 구간: 2014-01-01 ~ 2017-01-01    Box
+- financial crisis: 2007-01-01 ~ 2010-01-01 finC
+- Covid: 2019-11-01 ~ 최근         Covid
+- Bull period: 2017-01-01 ~ 2020-01-01    Bull
+- Box period: 2014-01-01 ~ 2017-01-01    Box
 
 '''
 def first_pop(df1, df2, key:str):
@@ -46,12 +46,12 @@ def first_pop(df1, df2, key:str):
     return name, df2
 
 
-df = pd.read_csv('C:/Users/wongyu Lee/Desktop/data/asset_allocation_data/S&P_500_ClosingPrice.csv', index_col = 0)
+df = pd.read_csv('data.csv', index_col = 0)
 df.index = pd.to_datetime(df.index)
 
-gics = pd.read_csv('C:/Users/wongyu Lee/Desktop/data/asset_allocation_data/s&p500_GICS .csv')
+gics = pd.read_csv('data.csv')
 
-market_cap = pd.read_csv('C:/Users/wongyu Lee/Desktop/data/asset_allocation_data/SP50_MarketCap.csv', usecols=['Ticker','Market Cap'])
+market_cap = pd.read_csv('data.csv', usecols=['Ticker','Market Cap'])
 
 gics_list = {}
 for ix in gics['Sector'].unique():
@@ -61,10 +61,6 @@ for ix in gics['Sector'].unique():
     else:
         abb = ix[:4]
     gics_list[ix] = abb
-
-# https://pandas.pydata.org/pandas-docs/stable/user_guide/advanced.html
-# df Ticker order가 gics Ticker order 와 맞는지 검사하는 코드 추가해야함
-
 
 tic = []
 sec = []
@@ -103,12 +99,12 @@ def preprocess(flag):
     tick_size = 200
     data = []
     # mx = MinMaxScaler() # for mxscaler
-    for g in finc.columns.get_level_values(0).unique(): # market cap 별로 랭킹을 골라서 상위 1개 종목 추리기
+    for g in finc.columns.get_level_values(0).unique(): # market cap ranking calc
         sec = finc[g].columns.values
         ticks = market_cap.where(market_cap['Ticker'].isin(sec)).dropna()
         ticks = ticks.sort_values(by=['Market Cap'],ascending=False)
-        ticks = ticks['Ticker'] #[0:10] # fin crisis 기준 각 섹터별 global min은 16개임 => [11,1,1007]로 최대 16개를 만들 수 있음 
-        if len(ticks) <=tick_size and flag == 0: # flag가 0 일 때만 섹터별 global min을 구해 내뱉음
+        ticks = ticks['Ticker'] #[0:10] 
+        if len(ticks) <=tick_size and flag == 0: # whenever the flag= 0 produce sector based global min  
             tick_size = len(ticks)
         
         ticks, market_cap = first_pop(ticks, market_cap,'Ticker')
@@ -376,7 +372,7 @@ class Compressor(nn.Module):
 class Decompressor(nn.Module):
     def __init__(self,):
         super(Decompressor,self).__init__()
-        self.ff = nn.Linear(opt.latent_dim,256) # z에서 ffnn으로 크기를 늘려준 뒤에 다시 tr block에 feeding
+        self.ff = nn.Linear(opt.latent_dim,256) # at z expand the size using ffnn and feed it to tr block
         
     def forward(self, data):
         ff = self.ff(data)
@@ -412,7 +408,7 @@ class Discriminator(nn.Module):
             nn.Linear(128, 64),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(64, 1),
-            nn.Sigmoid(), # BCELoss를 쓸때는 마지막 값이 0~1이어야 하므로 마지막에 Sigmoid를 해줌
+            nn.Sigmoid(), # In order to use BCELoss the range has to be between 0~1 -> Use Sigmoid
         )
 
     def forward(self, z):
@@ -437,7 +433,7 @@ class EncoderDecoder(nn.Module):
         self.compress = compress
         self.decompress = decompress
     def forward(self, src, src_mask):        # src.shape -> torch.Size([30, 10]) , src_mask -> torch.Size([30, 1, 10])
-        return self.trblock(self.src_embed(src), src_mask) # self.src_embed(src) 이 부분이 에러  # self.src_embed(src).shape -> torch.Size([30, 10, opt.d_model])
+        return self.trblock(self.src_embed(src), src_mask) 
 
 
 # Initialize generator and discriminator
@@ -457,7 +453,7 @@ def set_model(src_vocab, N=opt.num_layers, d_model=opt.d_model, d_ff=2048, h=opt
     
     # This was important from their code. 
     # Initialize parameters with Glorot / fan_avg. 
-    # model parameter들을 layer별로 돌면서 초기화 시켜줌 
+    # initialize model parameters looping by layer 
     for p in model.parameters(): # [512, 512]->[512]->[512,512] ...
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
@@ -465,7 +461,7 @@ def set_model(src_vocab, N=opt.num_layers, d_model=opt.d_model, d_ff=2048, h=opt
 
 
 # Initialize generator and discriminator
-encoder = set_model(opt.d_model) # self.src_mask = (src != pad).unsqueeze(-2) # (src != pad) -> src와 pad 가 같지 않은 값에 False 나머진 True 
+encoder = set_model(opt.d_model) # self.src_mask = (src != pad).unsqueeze(-2) # (src != pad)  
 # con_vec = Context_vec()
 decoder = Decoder()
 discriminator = Discriminator()
@@ -476,14 +472,12 @@ if cuda:
     discriminator.cuda()
     adversarial_loss.cuda()
     pixelwise_loss.cuda()
-
-
+    
 # Optimizers
 optimizer_G = torch.optim.Adam(
     itertools.chain(encoder.parameters(), decoder.parameters()), lr=opt.lr, betas=(opt.b1, opt.b2)
-) # itertools.chain(a,b) => 둘은 연결(concatenate) 시킴 # print(list(itertools.chain(a,b)))
+) # print(list(itertools.chain(a,b)))
 optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-# 옵티마이저에모델의 모든 매개변수를 등록함
 Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
 
@@ -505,7 +499,7 @@ def visualization(real_img, pred_img, batches_done):
     x = np.arange(real_img.shape[-1]) #.reshape(1,real_img.shape[1])
     f, a = plt.subplots(11,2, figsize=(20,20))
     for i in range(11):
-        img = real_img.detach().numpy().reshape(11,opt.d_model)[i] # 1007으로 data shape이 바뀌었음 !!
+        img = real_img.detach().numpy().reshape(11,opt.d_model)[i] 
         a[i][0].plot(x, img, color='blue')
     a[0,0].title.set_text('real images')
     for j in range(11):
@@ -524,8 +518,6 @@ for epoch in range(opt.n_epochs):
         # Adversarial ground truths
         valid = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
         fake = Variable(Tensor(imgs.shape[0], 1).fill_(0.0), requires_grad=False)
-        # autograd에서 requires_grad=True를 갖는 텐서 값들에 대해서 모든 연산(operation)들을 추적함 
-        # Configure input
         real_imgs = Variable(imgs.type(torch.IntTensor))
         real_imgs = real_imgs.squeeze(-2)
         # -----------------
@@ -533,8 +525,6 @@ for epoch in range(opt.n_epochs):
         # -----------------
         
         optimizer_G.zero_grad()
-
-        
         en_mask = (real_imgs.squeeze(-2) != pad).unsqueeze(-2)
         # src_mask = 6
         encoded_imgs = encoder(real_imgs, en_mask)
