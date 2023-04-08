@@ -165,7 +165,7 @@ rolln = 20
 sigma = 2
 vb = pd.DataFrame()
 
-files = glob.glob('C:/Users/wongyu Lee/Desktop/algoTrade-master/data/us_etf_data/*.csv')
+files = glob.glob('data_link')
 month_last_df = pd.DataFrame(columns=['Date','CODE','1M_RET'])
 stock_df = pd.DataFrame(columns =['Date','CODE','Close'])
 
@@ -359,34 +359,6 @@ book = tradings(book, stock_codes)
 multi_returns(book, stock_codes)
 
 book.tail()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
