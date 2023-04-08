@@ -27,3 +27,4 @@ ls_portfolio_cum_rtn = (1+ls_portfolio_rtn).cumprod()
 portfolio_cum_rtn.plot(label = 'Long_Short')
 plt.ylabel('cumulative return (%)')
 plt.legend()
+
