@@ -4,7 +4,7 @@
 '''
 
 
-Transformer with heavy notations in Korean
+Transformer with heavy comments in Korean
 
 
 
