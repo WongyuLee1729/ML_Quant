@@ -599,13 +599,3 @@ def predict(sentence):
 # testing with sample inputs 
 
 output = predict('영화 볼래?')
-
-# output = predict("고민이 있어")
-
-# output = predict("너무 화가나")
-
-# output = predict("게임하고싶은데 할래?")
-
-# output = predict("나 너 좋아하는 것 같아")
-
-# output = predict("딥 러닝 자연어 처리를 잘 하고 싶어")
