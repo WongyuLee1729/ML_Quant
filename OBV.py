@@ -21,21 +21,26 @@ df['Date'] = df.index
 # plt.show()
 
 # calculate OBV
-OBV = [] 
-OBV.append(0)
-for i in range(1, len(df.Close)):
-    # If the closing price is above the prior close price 
-    if df.Close[i] > df.Close[i-1]:
-        # Then: Current OBV = Previous OBV + Current Volume 
-        OBV.append(OBV[-1] + df.Volume[i])
-    elif df.Close[i] < df.Close[i-1]:
-        OBV.append(OBV[-1] - df.Volume[i])
-    else:
-        OBV.append(OBV[-1])
-
-# OBV + Exponential Moving Average (EMA) 
-df['OBV'] = OBV
-df['OBV_EMA'] = df['OBV'].ewm(com=10).mean()
+def OBV(df):
+    '''
+    On-Balance Volume
+    
+    '''
+    OBV = [] 
+    OBV.append(0)
+    for i in range(1, len(df.Close)):
+        # If the closing price is above the prior close price 
+        if df.Close[i] > df.Close[i-1]:
+            # Then: Current OBV = Previous OBV + Current Volume 
+            OBV.append(OBV[-1] + df.Volume[i])
+        elif df.Close[i] < df.Close[i-1]:
+            OBV.append(OBV[-1] - df.Volume[i])
+        else:
+            OBV.append(OBV[-1])
+    
+    # OBV + Exponential Moving Average (EMA) 
+    df['OBV'] = OBV
+    df['OBV_EMA'] = df['OBV'].ewm(com=10).mean()
 
 
 # =============================================================================
@@ -74,7 +79,7 @@ def buy_sell(signal, col1, col2):
             flag = 0
 
 # add buy/sell signal
-
+OBV(df)
 buy_sell(df, 'OBV', 'OBV_EMA')
 
 #%%
